@@ -19,6 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @lru_cache()
 def get_settings():
     return config.settings()
