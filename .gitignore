@@ -1,0 +1,10 @@
+.cursorrules
+.env
+.venv
+
+# Logs
+*.log
+
+
+#cache
+__pycache__

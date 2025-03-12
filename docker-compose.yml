@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: travel-planner-api
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    networks:
+      - travel-planner-network
+
+  redis:
+    image: redis:alpine
+    container_name: travel-planner-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - travel-planner-network
+    command: redis-server --appendonly yes
+
+networks:
+  travel-planner-network:
+    driver: bridge
+
+volumes:
+  redis_data: 
