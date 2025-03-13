@@ -8,3 +8,8 @@ langchain_xai>=0.0.1
 langchain-core>=0.1.0
 fastapi-cache2[redis]>=0.2.1
 python-dotenv>=1.0.0
+passlib[bcrypt]
+psycopg2-binary
+alembic
+pyjwt[crypto]>=2.6.0
+python-multipart

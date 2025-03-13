@@ -89,3 +89,14 @@ In development mode, the `/api/v1/plan` endpoint returns a mock response for fas
 ## Caching
 
 The API uses Redis for caching responses to improve performance and reduce API calls to the AI service. The cache TTL (time-to-live) can be configured in the `.env` file. 
+
+## Migration
+
+# Local development
+alembic revision --autogenerate -m "Description of changes"
+alembic upgrade head
+
+# In Docker
+docker-compose exec api alembic revision --autogenerate -m "Description of changes"
+docker-compose exec api alembic upgrade head
+

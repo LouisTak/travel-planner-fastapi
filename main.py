@@ -2,14 +2,16 @@ from fastapi import FastAPI
 from functools import lru_cache
 import config
 from controllers.ai_controller import router as ai_router
+from controllers.authentication_controller import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
-
+from fastapi.security import OAuth2PasswordBearer
 app = FastAPI(
     title="Travel Planner API",
     description="API for planning travel itineraries and getting travel suggestions using AI",
     version="1.0.0",
 )
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -22,7 +24,7 @@ app.add_middleware(
 
 @lru_cache()
 def get_settings():
-    return config.settings()
+    return config.settings  # Return the settings instance, not calling it as a function
 
 @app.get("/")
 def read_root():
@@ -30,3 +32,6 @@ def read_root():
 
 # Include the AI router
 app.include_router(ai_router, prefix="/api/v1")
+
+# Include the authentication router
+app.include_router(auth_router, prefix="/api/v1")
