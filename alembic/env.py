@@ -7,7 +7,11 @@ from alembic import context
 
 from config import settings
 from models import *  # Import all models here
-from models.user import Base as UserBase
+from models.user import User
+from models.travel_plan import TravelPlan
+from models.travel_plan_day import TravelPlanDay
+from models.checkpoint import Checkpoint
+from database.database import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -20,7 +24,7 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-target_metadata = [UserBase.metadata]
+target_metadata = [Base.metadata]
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
