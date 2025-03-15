@@ -10,7 +10,7 @@ from models import *  # Import all models here
 from models.user import User
 from models.travel_plan import TravelPlan
 from models.travel_plan_day import TravelPlanDay
-from models.checkpoint import Checkpoint
+from models.activity import Activity
 from database.database import Base
 
 # this is the Alembic Config object, which provides

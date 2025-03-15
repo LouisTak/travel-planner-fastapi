@@ -17,3 +17,6 @@ class TravelPlan(Base):
     end_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationship with TravelPlanDay
+    travel_plan_days = relationship("TravelPlanDay", back_populates="travel_plan", cascade="all, delete-orphan")
