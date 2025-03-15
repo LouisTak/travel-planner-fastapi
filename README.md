@@ -6,8 +6,9 @@ A FastAPI-based API for planning travel itineraries and getting travel suggestio
 
 - Generate detailed travel plans with day-by-day itineraries
 - Get specific travel suggestions and information about destinations
-- Powered by Grok-2 AI model via LangChain
+- Powered by Grok-2 AI model via LangGraph
 - Redis caching for improved performance
+- Robust error handling and retry logic
 
 ## Setup
 
@@ -90,6 +91,30 @@ In development mode, the `/api/v1/plan` endpoint returns a mock response for fas
 
 The API uses Redis for caching responses to improve performance and reduce API calls to the AI service. The cache TTL (time-to-live) can be configured in the `.env` file. 
 
+## LangGraph Implementation
+
+The API uses LangGraph to implement a robust workflow for generating travel plans and suggestions. The workflow includes:
+
+- Automatic retry logic for handling errors
+- Validation of generated plans
+- Conditional branching based on the state of the workflow
+- Fallback mechanisms for handling failures
+
+## Testing
+
+To run the tests:
+
+```bash
+# Run all tests
+TESTING=1 python -m pytest
+
+# Run specific tests
+TESTING=1 python tests/test_ai_graph.py
+```
+
+The `TESTING=1` environment variable ensures that the tests use mock data instead of making actual API calls.
+
+
 ## Migration
 
 # Local development
@@ -100,3 +125,5 @@ alembic upgrade head
 docker-compose exec api alembic revision --autogenerate -m "Description of changes"
 docker-compose exec api alembic upgrade head
 
+# Install new packages
+docker-compose exec api pip install -r requirements.txt

@@ -5,6 +5,7 @@ from database.database import Base, get_db
 from fastapi import Depends
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import relationship
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class User(Base):
@@ -18,6 +19,8 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    travel_plans = relationship("TravelPlan", back_populates="user")
     
     def set_password(self, password: str):
         self.hashed_password = pwd_context.hash(password)

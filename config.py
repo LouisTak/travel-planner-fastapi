@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = f"postgresql+psycopg2://{postgres_user}:{postgres_password}@localhost:5432/{postgres_db}"
     algorithm: str = "HS256"
     secret_key: str
-    access_token_expire_minutes: int
-    refresh_token_expire_days: int
+    access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 30
     
     class Config:
         env_file = ".env"
