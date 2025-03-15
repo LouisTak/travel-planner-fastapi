@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 from models.user import User
-from schemas.user_schemas import UserCreate
+from schemas.user_schemas import UserCreate, UserChangePassword, UserUpdate
 from passlib.context import CryptContext
+from fastapi import HTTPException
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -25,4 +26,24 @@ def create_user(db: Session, user: UserCreate):
     return db_user
 
 def verify_password(plain_password: str, hashed_password: str):
-    return pwd_context.verify(plain_password, hashed_password) 
+    return pwd_context.verify(plain_password, hashed_password)
+
+def change_password(db: Session, user: UserChangePassword):
+    user = db.query(User).filter(User.email == user.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not verify_password(user.hashed_password, user.old_password):
+        raise HTTPException(status_code=401, detail="Incorrect old password")
+    user.hashed_password = pwd_context.hash(user.new_password)
+    db.commit()
+    db.refresh(user)
+    return user
+
+def update_user(db: Session, user: UserUpdate):
+    user = db.query(User).filter(User.email == user.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.nickname = user.nickname
+    db.commit()
+    db.refresh(user)
+    return user

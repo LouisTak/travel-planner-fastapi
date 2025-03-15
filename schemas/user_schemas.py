@@ -17,11 +17,12 @@ class UserCreate(UserBase):
 
 class UserUpdate(BaseModel):
     """Schema for user updates with all fields optional."""
-    email: Optional[EmailStr] = None
-    username: Optional[str] = Field(None, min_length=3, max_length=80)
     nickname: Optional[str] = Field(None, max_length=80)
-    password: Optional[str] = Field(None, min_length=6)
 
+class UserChangePassword(BaseModel):
+    """Schema for user change password."""
+    old_password: str = Field(..., min_length=6)
+    new_password: str = Field(..., min_length=6)
 
 class UserInDB(UserBase):
     """Schema for user in database with additional fields."""
