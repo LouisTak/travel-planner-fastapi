@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+import os
 
 class Settings(BaseSettings):
     xai_api_key: str
@@ -22,4 +23,8 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
 
-settings = Settings()
+# Set environment to test if running tests
+if os.environ.get("TESTING") == "1":
+    settings = Settings(env="test")
+else:
+    settings = Settings()
