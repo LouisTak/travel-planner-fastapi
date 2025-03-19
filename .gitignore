@@ -1,4 +1,4 @@
-.cursorrules
+.cursor*
 .env
 .venv
 
@@ -8,3 +8,6 @@
 
 #cache
 __pycache__
+
+#macOS
+.DS_Store
