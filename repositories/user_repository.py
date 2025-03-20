@@ -28,22 +28,23 @@ def create_user(db: Session, user: UserCreate):
 def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(plain_password, hashed_password)
 
-def change_password(db: Session, user: UserChangePassword):
-    user = db.query(User).filter(User.email == user.email).first()
+def change_password(db: Session, user_data: UserChangePassword):
+    user = db.query(User).filter(User.email == user_data.email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    if not verify_password(user.hashed_password, user.old_password):
+    if not verify_password(user_data.old_password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Incorrect old password")
-    user.hashed_password = pwd_context.hash(user.new_password)
+    user.hashed_password = pwd_context.hash(user_data.new_password)
     db.commit()
     db.refresh(user)
     return user
 
-def update_user(db: Session, user: UserUpdate):
-    user = db.query(User).filter(User.email == user.email).first()
+def update_user(db: Session, user_data: UserUpdate):
+    user = db.query(User).filter(User.email == user_data.email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    user.nickname = user.nickname
+    if user_data.nickname is not None:
+        user.nickname = user_data.nickname
     db.commit()
     db.refresh(user)
     return user

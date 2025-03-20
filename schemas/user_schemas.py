@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, validator
+from models.user_role import UserRole
 
 
 class UserBase(BaseModel):
@@ -27,6 +28,7 @@ class UserChangePassword(BaseModel):
 class UserInDB(UserBase):
     """Schema for user in database with additional fields."""
     id: str  # Changed from int to str to match UUID string in database
+    role: str = Field(default=UserRole.FREE.value)
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -38,7 +40,8 @@ class UserInDB(UserBase):
 
 class UserResponse(UserBase):
     """Schema for user response without sensitive data."""
-    id: str  # Changed from int to str to match UUID string in databasetrin
+    id: str  # Changed from int to str to match UUID string in database
+    role: str = Field(default=UserRole.FREE.value)
     is_active: bool
     created_at: datetime
     updated_at: datetime
