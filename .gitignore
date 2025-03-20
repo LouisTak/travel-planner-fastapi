@@ -8,6 +8,7 @@
 
 #cache
 __pycache__
+.coverage
 
 #macOS
 .DS_Store
