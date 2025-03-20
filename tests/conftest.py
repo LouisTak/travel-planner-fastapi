@@ -1,16 +1,26 @@
 import pytest
+import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from typing import Generator
+from passlib.context import CryptContext
 
 from fastapi import Depends
 from database.database import Base, get_db
 from main import app
 from models.user import User
 from models.user_role import UserRole
-from schemas.authentication_schemas import create_access_token, create_refresh_token
+from models.travel_plan import TravelPlan
+from models.travel_plan_day import TravelPlanDay
+from models.activity import Activity
+from dependencies.auth import create_access_token, create_refresh_token
+
+# Set up password hashing for tests
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+TEST_PASSWORD = "password"
+HASHED_TEST_PASSWORD = pwd_context.hash(TEST_PASSWORD)
 
 # Use in-memory SQLite for tests
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -35,8 +45,10 @@ def override_get_db():
 # Override the dependency
 app.dependency_overrides[get_db] = override_get_db
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def test_db():
+    # Drop all tables to start fresh
+    Base.metadata.drop_all(bind=engine)
     # Create the tables
     Base.metadata.create_all(bind=engine)
     
@@ -46,12 +58,9 @@ def test_db():
         yield db
     finally:
         db.close()
-        
-    # Drop all tables after test
-    Base.metadata.drop_all(bind=engine)
 
 @pytest.fixture
-def client() -> Generator:
+def client(test_db) -> Generator:
     with TestClient(app) as c:
         yield c
 
@@ -62,7 +71,7 @@ def test_user(test_db):
         email="test@example.com",
         username="testuser",
         nickname="Test User",
-        hashed_password="$2b$12$RBxWZvlZt9o./JubwxUFPOZ9xvKyBKJuOK8QYV.IYG3YeRRDZq0Q.",  # hashed 'password'
+        hashed_password=HASHED_TEST_PASSWORD,
         role=UserRole.SUBSCRIBER.value
     )
     test_db.add(user)
@@ -77,7 +86,7 @@ def admin_user(test_db):
         email="admin@example.com",
         username="adminuser",
         nickname="Admin User",
-        hashed_password="$2b$12$RBxWZvlZt9o./JubwxUFPOZ9xvKyBKJuOK8QYV.IYG3YeRRDZq0Q.",  # hashed 'password'
+        hashed_password=HASHED_TEST_PASSWORD,
         role=UserRole.ADMIN.value
     )
     test_db.add(user)

@@ -4,6 +4,7 @@ import config
 from controllers.ai_controller import router as ai_router
 from controllers.authentication_controller import router as auth_router
 from controllers.travel_plan_controller import router as travel_plan_router
+from controllers.user_controller import router as user_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 app = FastAPI(
@@ -39,3 +40,6 @@ app.include_router(auth_router, prefix="/api/v1")
 
 # Include the travel plan router
 app.include_router(travel_plan_router, prefix="/api/v1")
+
+# Include the user router
+app.include_router(user_router, prefix="/api/v1")

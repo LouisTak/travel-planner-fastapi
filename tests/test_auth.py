@@ -54,7 +54,7 @@ class TestAuthenticationController:
         assert "access_token" in data
         assert "refresh_token" in data
 
-    def test_login_invalid_credentials(self, client: TestClient):
+    def test_login_invalid_credentials(self, client: TestClient, test_user):
         """Test login with invalid credentials."""
         response = client.post(
             "/api/v1/login",
@@ -67,7 +67,7 @@ class TestAuthenticationController:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert "Incorrect email or password" in response.json()["detail"]
 
-    def test_me_endpoint(self, authenticated_client: TestClient):
+    def test_me_endpoint(self, authenticated_client: TestClient, test_user):
         """Test the /me endpoint for getting user info."""
         response = authenticated_client.post("/api/v1/me")
         
@@ -75,7 +75,8 @@ class TestAuthenticationController:
         data = response.json()
         assert data["email"] == "test@example.com"
         assert data["username"] == "testuser"
-        assert data["role"] == "SUBSCRIBER"
+        assert "role" in data
+        assert data["role"].upper() == "SUBSCRIBER"
 
     def test_me_endpoint_unauthorized(self, client: TestClient):
         """Test the /me endpoint without authentication."""

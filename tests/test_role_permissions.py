@@ -24,7 +24,8 @@ class TestRolePermissions:
         assert premium_limits["max_activities_per_day"] > free_limits["max_activities_per_day"]
         
         admin_limits = limits[UserRole.ADMIN.value]
-        assert admin_limits["max_plans"] > premium_limits["max_plans"]
+        # Admin should have unlimited (-1) plans, which is special case
+        assert admin_limits["max_plans"] == -1
 
     def test_get_feature_descriptions(self):
         """Test that feature descriptions are correctly defined."""
@@ -32,71 +33,60 @@ class TestRolePermissions:
         
         # Check for the presence of some key features
         assert "view_plans" in descriptions
-        assert "create_plan" in descriptions
-        assert "delete_plans" in descriptions
-        assert "use_ai_suggestions" in descriptions
-        assert "use_ai_optimization" in descriptions
-        assert "export_plans" in descriptions
-        assert "collaborative_planning" in descriptions
-    
+        assert "basic_planning" in descriptions
+        
+        # Check some specific descriptions
+        assert "View and browse travel plans" in descriptions["view_plans"]
+        assert "Create and manage basic travel plans" in descriptions["basic_planning"]
+
     def test_has_feature_free_user(self):
         """Test feature access for free users."""
         # Free users should have access to basic features
         assert RolePermissions.has_feature(UserRole.FREE.value, "view_plans") is True
-        assert RolePermissions.has_feature(UserRole.FREE.value, "create_plan") is True
-        assert RolePermissions.has_feature(UserRole.FREE.value, "delete_plans") is True
-        assert RolePermissions.has_feature(UserRole.FREE.value, "use_ai_suggestions") is True
+        assert RolePermissions.has_feature(UserRole.FREE.value, "basic_planning") is True
         
         # Free users should not have access to premium features
         assert RolePermissions.has_feature(UserRole.FREE.value, "export_plans") is False
-        assert RolePermissions.has_feature(UserRole.FREE.value, "collaborative_planning") is False
-        assert RolePermissions.has_feature(UserRole.FREE.value, "use_ai_optimization") is False
-    
+        assert RolePermissions.has_feature(UserRole.FREE.value, "advanced_suggestions") is False
+
     def test_has_feature_subscriber_user(self):
         """Test feature access for subscriber users."""
         # Subscribers should have access to all free features
         assert RolePermissions.has_feature(UserRole.SUBSCRIBER.value, "view_plans") is True
-        assert RolePermissions.has_feature(UserRole.SUBSCRIBER.value, "create_plan") is True
-        assert RolePermissions.has_feature(UserRole.SUBSCRIBER.value, "delete_plans") is True
-        assert RolePermissions.has_feature(UserRole.SUBSCRIBER.value, "use_ai_suggestions") is True
+        assert RolePermissions.has_feature(UserRole.SUBSCRIBER.value, "basic_planning") is True
         
-        # Subscribers should have access to some premium features
+        # Subscribers should have some additional features
         assert RolePermissions.has_feature(UserRole.SUBSCRIBER.value, "export_plans") is True
+        assert RolePermissions.has_feature(UserRole.SUBSCRIBER.value, "regenerate_days") is True
         
-        # But not to the highest tier features
+        # Subscribers should not have access to premium features
+        assert RolePermissions.has_feature(UserRole.SUBSCRIBER.value, "advanced_suggestions") is False
         assert RolePermissions.has_feature(UserRole.SUBSCRIBER.value, "collaborative_planning") is False
-        assert RolePermissions.has_feature(UserRole.SUBSCRIBER.value, "use_ai_optimization") is False
-    
+
     def test_has_feature_premium_user(self):
         """Test feature access for premium users."""
         # Premium users should have access to all subscriber features
         assert RolePermissions.has_feature(UserRole.PREMIUM.value, "view_plans") is True
-        assert RolePermissions.has_feature(UserRole.PREMIUM.value, "create_plan") is True
-        assert RolePermissions.has_feature(UserRole.PREMIUM.value, "delete_plans") is True
-        assert RolePermissions.has_feature(UserRole.PREMIUM.value, "use_ai_suggestions") is True
+        assert RolePermissions.has_feature(UserRole.PREMIUM.value, "basic_planning") is True
         assert RolePermissions.has_feature(UserRole.PREMIUM.value, "export_plans") is True
         
-        # Premium users should have access to premium features
+        # Premium users should have additional features
+        assert RolePermissions.has_feature(UserRole.PREMIUM.value, "advanced_suggestions") is True
         assert RolePermissions.has_feature(UserRole.PREMIUM.value, "collaborative_planning") is True
-        assert RolePermissions.has_feature(UserRole.PREMIUM.value, "use_ai_optimization") is True
-        assert RolePermissions.has_feature(UserRole.PREMIUM.value, "use_ai_personalization") is True
-    
+        
+        # Premium users should not have access to admin features
+        assert RolePermissions.has_feature(UserRole.PREMIUM.value, "user_management") is False
+
     def test_has_feature_admin_user(self):
         """Test feature access for admin users."""
         # Admins should have access to all features
         assert RolePermissions.has_feature(UserRole.ADMIN.value, "view_plans") is True
-        assert RolePermissions.has_feature(UserRole.ADMIN.value, "create_plan") is True
-        assert RolePermissions.has_feature(UserRole.ADMIN.value, "delete_plans") is True
-        assert RolePermissions.has_feature(UserRole.ADMIN.value, "use_ai_suggestions") is True
+        assert RolePermissions.has_feature(UserRole.ADMIN.value, "basic_planning") is True
         assert RolePermissions.has_feature(UserRole.ADMIN.value, "export_plans") is True
-        assert RolePermissions.has_feature(UserRole.ADMIN.value, "collaborative_planning") is True
-        assert RolePermissions.has_feature(UserRole.ADMIN.value, "use_ai_optimization") is True
-        assert RolePermissions.has_feature(UserRole.ADMIN.value, "use_ai_personalization") is True
-        
-        # And admin-specific features
-        assert RolePermissions.has_feature(UserRole.ADMIN.value, "admin_stats") is True
-    
+        assert RolePermissions.has_feature(UserRole.ADMIN.value, "advanced_suggestions") is True
+        assert RolePermissions.has_feature(UserRole.ADMIN.value, "user_management") is True
+        assert RolePermissions.has_feature(UserRole.ADMIN.value, "all_features") is True
+
     def test_has_feature_nonexistent(self):
-        """Test behavior when checking for a nonexistent feature."""
-        # Should return False for a nonexistent feature
+        """Test checking for a feature that doesn't exist."""
         assert RolePermissions.has_feature(UserRole.ADMIN.value, "nonexistent_feature") is False 

@@ -18,12 +18,26 @@ class UserCreate(UserBase):
 
 class UserUpdate(BaseModel):
     """Schema for user updates with all fields optional."""
+    email: Optional[EmailStr] = None
     nickname: Optional[str] = Field(None, max_length=80)
 
 class UserChangePassword(BaseModel):
     """Schema for user change password."""
+    email: Optional[EmailStr] = None
     old_password: str = Field(..., min_length=6)
     new_password: str = Field(..., min_length=6)
+
+class UserRoleUpdate(BaseModel):
+    """Schema for updating a user's role."""
+    role: str
+    
+    @validator('role')
+    def validate_role(cls, value):
+        try:
+            UserRole(value)
+            return value
+        except ValueError:
+            raise ValueError(f"Invalid role: {value}. Must be one of {[r.value for r in UserRole]}")
 
 class UserInDB(UserBase):
     """Schema for user in database with additional fields."""
