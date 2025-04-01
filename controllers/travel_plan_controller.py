@@ -13,16 +13,17 @@ from repositories.travel_plan_repository import (
     delete_travel_plan
 )
 from utils.response_wrapper import api_response
+from middleware.jwt_auth import JWTBearer
 
 router = APIRouter(tags=["Travel Plans"])
 
 from schemas.ai_schemas import TravelPlanResponse
 
+auth_bearer = JWTBearer()  # Basic authentication
 
 @router.get("/travel-plans", status_code=status.HTTP_200_OK, response_model=None)
 async def get_user_travel_plans(
-    db: Session = Depends(get_db),
-    token: str = Depends(oauth2_scheme)
+    credentials: str = Depends(auth_bearer)
 ) -> List[Dict[str, Any]]:
     """
     Get all travel plans for the current user.
@@ -35,16 +36,16 @@ async def get_user_travel_plans(
     Returns:
         List of travel plans
     """
-    # Get all travel plans for the user
-    current_user = await get_current_user(token, db)
-    
+    # Get all travel plans for the user    
+    current_user = await get_current_user(credentials.credentials)
+
     if(not current_user):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Unauthorized"
         )
-    
-    travel_plans = await get_travel_plans_by_user_id(db, current_user.id)
+
+    travel_plans = await get_travel_plans_by_user_id(current_user.id)
     
     # Format the response
     result = []
@@ -64,8 +65,7 @@ async def get_user_travel_plans(
 @router.get("/travel-plans/{travel_plan_id}", status_code=status.HTTP_200_OK, response_model=None)
 async def get_travel_plan_details(
     travel_plan_id: str = Path(..., description="ID of the travel plan"),
-    db: Session = Depends(get_db),
-    token: str = Depends(oauth2_scheme)
+    credentials: str = Depends(auth_bearer)
 ) -> Dict[str, Any]:
     """
     Get details of a specific travel plan.
@@ -80,8 +80,8 @@ async def get_travel_plan_details(
         Travel plan details
     """
     # Get the travel plan
-    current_user = await get_current_user(token, db)
-    travel_plan = await get_travel_plan_by_id(db, travel_plan_id)
+    current_user = await get_current_user(credentials.credentials)
+    travel_plan = await get_travel_plan_by_id(travel_plan_id)
     if not travel_plan:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -96,13 +96,13 @@ async def get_travel_plan_details(
         )
     
     # Get all days for the travel plan
-    days = await get_travel_plan_days(db, travel_plan_id)
+    days = await get_travel_plan_days(travel_plan_id)
     
     # Format the days and activities
     formatted_days = []
     for day in days:
         # Get activities for the day
-        activities = await get_activities_by_day_id(db, day.id)
+        activities = await get_activities_by_day_id(day.id)
         
         # Format activities
         formatted_activities = []
@@ -144,8 +144,7 @@ async def get_travel_plan_details(
 @router.delete("/travel-plans/{travel_plan_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def delete_user_travel_plan(
     travel_plan_id: str = Path(..., description="ID of the travel plan"),
-    db: Session = Depends(get_db),
-    token: str = Depends(oauth2_scheme)
+    credentials: str = Depends(auth_bearer)
 ):
     """
     Delete a travel plan.
@@ -157,8 +156,8 @@ async def delete_user_travel_plan(
         token: JWT token for authentication
     """
     # Get the travel plan
-    current_user = await get_current_user(token, db)
-    travel_plan = await get_travel_plan_by_id(db, travel_plan_id)
+    current_user = await get_current_user(credentials.credentials)
+    travel_plan = await get_travel_plan_by_id(travel_plan_id)
     if not travel_plan:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -173,7 +172,7 @@ async def delete_user_travel_plan(
         )
     
     # Delete the travel plan
-    success = await delete_travel_plan(db, travel_plan_id)
+    success = await delete_travel_plan(travel_plan_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

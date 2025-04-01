@@ -43,5 +43,6 @@ class User(Base):
         """Check if the user has premium access."""
         return self.role in [UserRole.PREMIUM.value, UserRole.ADMIN.value]
 
-def get_user_by_email(email: str, db: Session = Depends(get_db)):
+def get_user_by_email(email: str):
+    db = next(get_db())
     return db.query(User).filter(User.email == email).first()

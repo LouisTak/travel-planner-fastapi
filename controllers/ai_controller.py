@@ -14,7 +14,7 @@ from services.travel_plan_service import create_travel_plan_from_ai_response
 from models.user import User
 from typing import Annotated
 from utils.response_wrapper import api_response
-
+from middleware.jwt_auth import JWTBearer
 
 from schemas.ai_schemas import (
     TravelPlanInput, 
@@ -25,13 +25,12 @@ from schemas.ai_schemas import (
 
 router = APIRouter(tags=["Travel Planning"])
 
-
+auth_bearer = JWTBearer()
 @router.post("/plan", response_model=TravelPlanResponse, status_code=status.HTTP_200_OK)
 async def ai_plan(
-    token: Annotated[str, Depends(oauth2_scheme)], 
     input_data: TravelPlanInput, 
     save_to_db: Optional[bool] = Query(False, description="Whether to save the plan to the database"),
-    db: Session = Depends(get_db),
+    credentials: str = Depends(auth_bearer),
 ) -> Dict[str, Any]:
     """
     Generate a travel plan using AI.
@@ -180,13 +179,12 @@ async def ai_plan(
             "plan": result["plan"]
         }
         
-        current_user = await get_current_user(token, db)
+        current_user = await get_current_user(credentials.credentials)
 
         # Save to database if requested
         if save_to_db:
             try:
                 await create_travel_plan_from_ai_response(
-                    db=db,
                     user_id=current_user.id,
                     ai_response=response,
                     start_date=input_data.start_date
@@ -208,7 +206,7 @@ async def ai_plan(
 
 
 @router.post("/suggest", response_model=TravelSuggestionResponse, status_code=status.HTTP_200_OK)
-async def ai_suggest(input_data: TravelSuggestionInput, token: str = Depends(oauth2_scheme)) -> Dict[str, Any]:
+async def ai_suggest(input_data: TravelSuggestionInput, credentials: str = Depends(auth_bearer)) -> Dict[str, Any]:
     """
     Get specific travel suggestions or answers about a destination.
     

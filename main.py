@@ -6,6 +6,7 @@ from controllers.authentication_controller import router as auth_router
 from controllers.travel_plan_controller import router as travel_plan_router
 from controllers.user_controller import router as user_router
 from controllers.health_check_controller import router as health_check_router
+from controllers.example_controller import router as example_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 app = FastAPI(
@@ -47,3 +48,6 @@ app.include_router(user_router, prefix="/api/v1")
 
 # Include the health check router
 app.include_router(health_check_router, prefix="/api/v1")
+
+# Include the example router
+app.include_router(example_router, prefix="/api/v1")

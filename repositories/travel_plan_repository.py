@@ -5,7 +5,7 @@ from datetime import date
 from models.travel_plan import TravelPlan
 from models.travel_plan_day import TravelPlanDay
 from models.activity import Activity
-
+from database.database import get_db
 
 async def get_travel_plan_by_id(db: Session, travel_plan_id: str) -> Optional[TravelPlan]:
     """
@@ -21,7 +21,7 @@ async def get_travel_plan_by_id(db: Session, travel_plan_id: str) -> Optional[Tr
     return db.query(TravelPlan).filter(TravelPlan.id == travel_plan_id).first()
 
 
-async def get_travel_plans_by_user_id(db: Session, user_id: str) -> List[TravelPlan]:
+async def get_travel_plans_by_user_id(user_id: str) -> List[TravelPlan]:
     """
     Get all travel plans for a user.
     
@@ -32,6 +32,7 @@ async def get_travel_plans_by_user_id(db: Session, user_id: str) -> List[TravelP
     Returns:
         List of travel plans
     """
+    db = next(get_db())
     return db.query(TravelPlan).filter(TravelPlan.user_id == user_id).all()
 
 

@@ -7,10 +7,9 @@ from models.travel_plan_day import TravelPlanDay
 from models.activity import Activity
 from schemas.ai_schemas import TravelPlanDBCreate, TravelPlanDayDBCreate, ActivityDBCreate
 from repositories.travel_plan_repository import get_travel_plan_days, get_activities_by_day_id, get_travel_plan_by_id
-
+from database.database import get_db
 
 async def create_travel_plan_from_ai_response(
-    db: Session, 
     user_id: str, 
     ai_response: Dict[str, Any], 
     start_date: date = None
@@ -56,6 +55,8 @@ async def create_travel_plan_from_ai_response(
         end_at=travel_plan_data.end_at,
         user_id=travel_plan_data.user_id
     )
+    
+    db = next(get_db())
     db.add(travel_plan)
     db.flush()  # Flush to get the ID
     
@@ -108,7 +109,6 @@ async def create_travel_plan_from_ai_response(
 
 
 async def update_travel_plan_day(
-    db: Session,
     travel_plan_id: str,
     day_number: int,
     updated_day: Dict[str, Any]
@@ -125,6 +125,8 @@ async def update_travel_plan_day(
     Returns:
         None
     """
+    
+    db = next(get_db())
     # Get all days for the travel plan
     days = await get_travel_plan_days(db, travel_plan_id)
     
@@ -177,7 +179,6 @@ async def update_travel_plan_day(
 
 
 async def get_travel_plan_details_for_ai(
-    db: Session,
     travel_plan_id: str,
     user_id: str
 ) -> Dict[str, Any]:
@@ -192,6 +193,8 @@ async def get_travel_plan_details_for_ai(
     Returns:
         Travel plan details formatted for AI processing
     """
+    
+    db = next(get_db())
     # Get the travel plan
     travel_plan = await get_travel_plan_by_id(db, travel_plan_id)
     if not travel_plan:

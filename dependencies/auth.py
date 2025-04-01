@@ -8,11 +8,9 @@ import os
 from database.database import get_db
 from models.user import User
 from repositories.user_repository import get_user_by_email
+from middleware.jwt_auth import JWTBearer, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
-# JWT configurations
-SECRET_KEY = os.getenv("SECRET_KEY")  # In production, use environment variables
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+auth_bearer = JWTBearer()  # Basic authentication
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/login")
 
@@ -37,7 +35,7 @@ def create_refresh_token(data: dict):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+async def get_current_user(token: str = Depends(auth_bearer)):
     """Get the current user from the JWT token."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -53,7 +51,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     except JWTError:
         raise credentials_exception
     
-    user = get_user_by_email(db, email)
+    user = get_user_by_email(email)
     if user is None:
         raise credentials_exception
     

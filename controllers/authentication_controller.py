@@ -2,25 +2,28 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from database.database import get_db
-from schemas.user_schemas import UserCreate, UserResponse, UserLogin
-from repositories.user_repository import get_user_by_email, create_user, verify_password
+from schemas.user_schemas import UserCreate, UserResponse, UserLogin, UserChangePassword
+from repositories.user_repository import get_user_by_email, create_user, verify_password, change_password
 from dependencies.auth import get_current_user, create_access_token, create_refresh_token
 from models.user import User
 from datetime import timedelta
 from typing import Dict, Any
+from middleware.jwt_auth import JWTBearer
 
 router = APIRouter(tags=["Authentication"])
 
+auth_bearer = JWTBearer()
+
 @router.post("/register", response_model=UserResponse)
-async def register(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = get_user_by_email(db, email=user.email)
+async def register(user: UserCreate):
+    db_user = get_user_by_email(email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    return create_user(db=db, user=user)
+    return create_user(user=user)
 
 @router.post("/login")
-async def login(user_data: UserLogin, db: Session = Depends(get_db)):
-    user = get_user_by_email(db, email=user_data.email)
+async def login(user_data: UserLogin):
+    user = get_user_by_email(email=user_data.email)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -57,5 +60,14 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
     }
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(current_user: User = Depends(get_current_user)):
+async def get_current_user_info(credentials: str = Depends(auth_bearer)):
+    current_user = await get_current_user(credentials.credentials)
     return current_user
+
+@router.put('/change-password', status_code=status.HTTP_200_OK)
+async def update_password(
+    user_pwd: UserChangePassword, 
+    credentials: str = Depends(auth_bearer)
+):
+    current_user = await get_current_user(credentials.credentials)
+    return change_password(user_pwd, current_user.id)
