@@ -74,7 +74,7 @@ async def login(user_data: UserLogin):
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(credentials=Depends(auth_bearer)):
-    current_user = await get_current_user(credentials.credentials)
+    current_user = await get_current_user(credentials)
     return current_user
 
 
