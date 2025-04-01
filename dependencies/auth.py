@@ -8,20 +8,16 @@ import os
 from database.database import get_db
 from models.user import User
 from repositories.user_repository import get_user_by_email
-from middleware.jwt_auth import JWTBearer, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from middleware.jwt_auth import JWTBearer, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
 
 auth_bearer = JWTBearer()  # Basic authentication
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/login")
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(data: dict):
     """Create a JWT access token."""
     to_encode = data.copy()
-    
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -30,7 +26,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 def create_refresh_token(data: dict):
     """Create a JWT refresh token with longer expiry."""
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=7)  # Refresh token valid for 7 days
+    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)  # Refresh token valid for 7 days
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt

@@ -13,13 +13,14 @@ from config import settings
 SECRET_KEY = settings.secret_key
 ALGORITHM = settings.algorithm
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
+REFRESH_TOKEN_EXPIRE_DAYS = settings.refresh_token_expire_days
 
 class JWTBearer(HTTPBearer):
     def __init__(self, auto_error: bool = True, allowed_roles: Optional[List[str]] = None):
         super().__init__(auto_error=auto_error)
         self.allowed_roles = allowed_roles
 
-    async def __call__(self, request: Request, db: Session = Depends(get_db)) -> Optional[HTTPAuthorizationCredentials]:
+    async def __call__(self, request: Request, db: Session = Depends(get_db)) -> Optional[str]:
         # Skip authentication for certain paths
         if request.url.path in ["/api/v1/auth/login", "/api/v1/auth/register", "/docs", "/openapi.json"]:
             return None
@@ -61,7 +62,7 @@ class JWTBearer(HTTPBearer):
                     )
                 return None
 
-        return credentials
+        return credentials.credentials
 
     async def _verify_jwt(self, token: str, db: Session) -> bool:
         try:

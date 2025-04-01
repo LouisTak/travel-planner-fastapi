@@ -30,7 +30,7 @@ auth_bearer = JWTBearer()
 async def ai_plan(
     input_data: TravelPlanInput, 
     save_to_db: Optional[bool] = Query(False, description="Whether to save the plan to the database"),
-    credentials: str = Depends(auth_bearer),
+    credentials = Depends(auth_bearer),
 ) -> Dict[str, Any]:
     """
     Generate a travel plan using AI.
@@ -179,7 +179,7 @@ async def ai_plan(
             "plan": result["plan"]
         }
         
-        current_user = await get_current_user(credentials.credentials)
+        current_user = await get_current_user(credentials)
 
         # Save to database if requested
         if save_to_db:
@@ -206,7 +206,7 @@ async def ai_plan(
 
 
 @router.post("/suggest", response_model=TravelSuggestionResponse, status_code=status.HTTP_200_OK)
-async def ai_suggest(input_data: TravelSuggestionInput, credentials: str = Depends(auth_bearer)) -> Dict[str, Any]:
+async def ai_suggest(input_data: TravelSuggestionInput, credentials = Depends(auth_bearer)) -> Dict[str, Any]:
     """
     Get specific travel suggestions or answers about a destination.
     

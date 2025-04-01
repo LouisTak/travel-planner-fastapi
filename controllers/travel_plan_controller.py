@@ -10,20 +10,21 @@ from repositories.travel_plan_repository import (
     get_travel_plans_by_user_id,
     get_travel_plan_days,
     get_activities_by_day_id,
-    delete_travel_plan
+    delete_travel_plan,
+    create_travel_plan
 )
 from utils.response_wrapper import api_response
 from middleware.jwt_auth import JWTBearer
-
+from fastapi.security import HTTPAuthorizationCredentials
 router = APIRouter(tags=["Travel Plans"])
 
-from schemas.ai_schemas import TravelPlanResponse
+from schemas.ai_schemas import TravelPlanDBCreate
 
 auth_bearer = JWTBearer()  # Basic authentication
 
 @router.get("/travel-plans", status_code=status.HTTP_200_OK, response_model=None)
 async def get_user_travel_plans(
-    credentials: str = Depends(auth_bearer)
+    token: str = Depends(auth_bearer)
 ) -> List[Dict[str, Any]]:
     """
     Get all travel plans for the current user.
@@ -37,7 +38,7 @@ async def get_user_travel_plans(
         List of travel plans
     """
     # Get all travel plans for the user    
-    current_user = await get_current_user(credentials.credentials)
+    current_user = await get_current_user(token)
 
     if(not current_user):
         raise HTTPException(
@@ -61,11 +62,36 @@ async def get_user_travel_plans(
     
     return api_response(data=result)
 
+@router.post("/travel-plans", status_code=status.HTTP_201_CREATED, response_model=None)
+async def create(
+    travelPlanCreate: TravelPlanDBCreate,
+    token: str = Depends(auth_bearer)
+) -> Dict[str, Any]:
+    """
+    Create a new travel plan.
+
+    Args:
+        travel_plan: Travel plan data
+        token: JWT token for authentication
+
+    Returns:
+        Created travel plan
+    """
+    current_user = await get_current_user(token)
+    
+    if(not current_user):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized"
+        )
+    
+    travel_plan = await create_travel_plan(travelPlanCreate, current_user.id)
+    return api_response(data=travel_plan)
 
 @router.get("/travel-plans/{travel_plan_id}", status_code=status.HTTP_200_OK, response_model=None)
 async def get_travel_plan_details(
     travel_plan_id: str = Path(..., description="ID of the travel plan"),
-    credentials: str = Depends(auth_bearer)
+    token: str = Depends(auth_bearer)
 ) -> Dict[str, Any]:
     """
     Get details of a specific travel plan.
@@ -80,7 +106,7 @@ async def get_travel_plan_details(
         Travel plan details
     """
     # Get the travel plan
-    current_user = await get_current_user(credentials.credentials)
+    current_user = await get_current_user(token)
     travel_plan = await get_travel_plan_by_id(travel_plan_id)
     if not travel_plan:
         raise HTTPException(
@@ -140,11 +166,10 @@ async def get_travel_plan_details(
     
     return api_response(data=result)
 
-
 @router.delete("/travel-plans/{travel_plan_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def delete_user_travel_plan(
     travel_plan_id: str = Path(..., description="ID of the travel plan"),
-    credentials: str = Depends(auth_bearer)
+    token: str = Depends(auth_bearer)
 ):
     """
     Delete a travel plan.
@@ -156,7 +181,7 @@ async def delete_user_travel_plan(
         token: JWT token for authentication
     """
     # Get the travel plan
-    current_user = await get_current_user(credentials.credentials)
+    current_user = await get_current_user(token)
     travel_plan = await get_travel_plan_by_id(travel_plan_id)
     if not travel_plan:
         raise HTTPException(

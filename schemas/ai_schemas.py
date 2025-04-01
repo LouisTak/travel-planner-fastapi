@@ -68,11 +68,9 @@ class TravelPlanDBCreate(BaseModel):
     """Schema for creating a travel plan in the database."""
     title: str
     destination: str
-    remarks: str
+    remarks: Optional[str] = None
     start_at: date
     end_at: date
-    user_id: str
-    tips: List[str]
 
 
 class TravelPlanDayDBCreate(BaseModel):
