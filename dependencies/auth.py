@@ -4,13 +4,13 @@ from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from typing import Optional
-
+import os
 from database.database import get_db
 from models.user import User
 from repositories.user_repository import get_user_by_email
 
 # JWT configurations
-SECRET_KEY = "YOUR_SECRET_KEY_HERE"  # In production, use environment variables
+SECRET_KEY = os.getenv("SECRET_KEY")  # In production, use environment variables
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
