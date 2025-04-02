@@ -22,6 +22,7 @@ from middleware.jwt_auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     REFRESH_TOKEN_EXPIRE_DAYS,
 )
+from fastapi import Response
 
 router = APIRouter(tags=["Authentication"])
 
@@ -37,7 +38,7 @@ async def register(user: UserCreate):
 
 
 @router.post("/login")
-async def login(user_data: UserLogin):
+async def login(user_data: UserLogin, response: Response):
     user = get_user_by_email(email=user_data.email)
     if not user:
         raise HTTPException(
@@ -57,6 +58,21 @@ async def login(user_data: UserLogin):
 
     # Create refresh token
     refresh_token = create_refresh_token(data={"sub": user.email})
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+    )
 
     return {
         "access_token": access_token,
@@ -87,7 +103,9 @@ async def update_password(
 
 
 @router.post("/logout")
-async def logout(credentials=Depends(auth_bearer)):
+async def logout(response: Response, credentials=Depends(auth_bearer)):
+    response.delete_cookie(key="access_token")
+    response.delete_cookie(key="refresh_token")
     return {"message": "Logged out successfully"}
 
 
