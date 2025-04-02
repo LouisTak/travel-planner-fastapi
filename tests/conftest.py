@@ -1,127 +1,145 @@
 import pytest
-import pytest_asyncio
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
-from typing import Generator
-from passlib.context import CryptContext
+from unittest.mock import MagicMock
+from sqlalchemy.orm import Session
+import jwt
+from datetime import datetime, timedelta
+from typing import Dict, Any
 
-from fastapi import Depends
-from database.database import Base, get_db
-from main import app
+from config import settings
 from models.user import User
-from models.user_role import UserRole
 from models.travel_plan import TravelPlan
 from models.travel_plan_day import TravelPlanDay
 from models.activity import Activity
-from dependencies.auth import create_access_token, create_refresh_token
 
-# Set up password hashing for tests
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-TEST_PASSWORD = "password"
-HASHED_TEST_PASSWORD = pwd_context.hash(TEST_PASSWORD)
+# Test constants
+TEST_USER_ID = "test_user_id"
+TEST_EMAIL = "test@example.com"
+TEST_PASSWORD = "TestPassword123!"
+TEST_HASHED_PASSWORD = "hashed_password"
+TEST_FIRSTNAME = "Test"
+TEST_LASTNAME = "User"
+TEST_ROLE = "user"
 
-# Use in-memory SQLite for tests
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Create the tables
-Base.metadata.create_all(bind=engine)
-
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-# Override the dependency
-app.dependency_overrides[get_db] = override_get_db
-
-@pytest.fixture(scope="function")
-def test_db():
-    # Drop all tables to start fresh
-    Base.metadata.drop_all(bind=engine)
-    # Create the tables
-    Base.metadata.create_all(bind=engine)
-    
-    # Create a test session
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+TEST_PLAN_ID = "123e4567-e89b-12d3-a456-426614174000"
+TEST_DAY_ID = "123e4567-e89b-12d3-a456-426614174001"
+TEST_ACTIVITY_ID = "123e4567-e89b-12d3-a456-426614174002"
 
 @pytest.fixture
-def client(test_db) -> Generator:
-    with TestClient(app) as c:
-        yield c
+def mock_db():
+    """Create a mock database session."""
+    db = MagicMock(spec=Session)
+    return db
 
 @pytest.fixture
-def test_user(test_db):
-    # Create a test user
-    user = User(
-        email="test@example.com",
-        username="testuser",
-        nickname="Test User",
-        hashed_password=HASHED_TEST_PASSWORD,
-        role=UserRole.SUBSCRIBER.value
-    )
-    test_db.add(user)
-    test_db.commit()
-    test_db.refresh(user)
+def mock_user():
+    """Create a mock user object."""
+    user = MagicMock(spec=User)
+    user.id = TEST_USER_ID
+    user.email = TEST_EMAIL
+    user.hashed_password = TEST_HASHED_PASSWORD
+    user.firstname = TEST_FIRSTNAME
+    user.lastname = TEST_LASTNAME
+    user.role = TEST_ROLE
     return user
 
 @pytest.fixture
-def admin_user(test_db):
-    # Create an admin user
-    user = User(
-        email="admin@example.com",
-        username="adminuser",
-        nickname="Admin User",
-        hashed_password=HASHED_TEST_PASSWORD,
-        role=UserRole.ADMIN.value
-    )
-    test_db.add(user)
-    test_db.commit()
-    test_db.refresh(user)
-    return user
+def mock_travel_plan():
+    """Create a mock travel plan."""
+    plan = MagicMock(spec=TravelPlan)
+    plan.id = TEST_PLAN_ID
+    plan.user_id = TEST_USER_ID
+    plan.title = "Test Trip"
+    plan.destination = "Test Destination"
+    plan.start_at = datetime.now().date()
+    plan.end_at = datetime.now().date()
+    plan.created_at = datetime.now()
+    plan.updated_at = datetime.now()
+    return plan
 
 @pytest.fixture
-def test_user_token(test_user):
+def mock_travel_plan_day():
+    """Create a mock travel plan day."""
+    day = MagicMock(spec=TravelPlanDay)
+    day.id = TEST_DAY_ID
+    day.travel_plan_id = TEST_PLAN_ID
+    day.day_number = 1
+    day.description = "Test Day Description"
+    day.reminder = "Test Reminder"
+    return day
+
+@pytest.fixture
+def mock_activity():
+    """Create a mock activity."""
+    activity = MagicMock(spec=Activity)
+    activity.id = TEST_ACTIVITY_ID
+    activity.day_id = TEST_DAY_ID
+    activity.location = "Test Location"
+    activity.activity = "Test Activity"
+    activity.tips = "Test Tips"
+    activity.start_at = datetime.now().time()
+    activity.end_at = datetime.now().time()
+    return activity
+
+@pytest.fixture
+def user_data() -> Dict[str, Any]:
+    """Return user data for token creation."""
     return {
-        "access_token": create_access_token(data={"sub": test_user.email}),
-        "refresh_token": create_refresh_token(data={"sub": test_user.email})
+        "sub": TEST_EMAIL,
+        "user_id": TEST_USER_ID,
+        "role": TEST_ROLE
     }
 
 @pytest.fixture
-def admin_user_token(admin_user):
+def auth_token(user_data):
+    """Create an authentication token for testing."""
+    payload = user_data.copy()
+    payload["exp"] = (datetime.utcnow() + timedelta(minutes=30)).timestamp()
+    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+
+@pytest.fixture
+def auth_headers(auth_token):
+    """Create authentication headers."""
+    return {"Authorization": f"Bearer {auth_token}"}
+
+@pytest.fixture
+def admin_user_data() -> Dict[str, Any]:
+    """Return admin user data for token creation."""
     return {
-        "access_token": create_access_token(data={"sub": admin_user.email}),
-        "refresh_token": create_refresh_token(data={"sub": admin_user.email})
+        "sub": "admin@example.com",
+        "user_id": "admin_user_id",
+        "role": "admin"
     }
 
 @pytest.fixture
-def authenticated_client(client, test_user_token):
-    """Return a client with valid authentication token."""
-    client.headers = {
-        **client.headers,
-        "Authorization": f"Bearer {test_user_token['access_token']}"
-    }
-    return client
+def admin_token(admin_user_data):
+    """Create an admin authentication token for testing."""
+    payload = admin_user_data.copy()
+    payload["exp"] = (datetime.utcnow() + timedelta(minutes=30)).timestamp()
+    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 @pytest.fixture
-def admin_client(client, admin_user_token):
-    """Return a client with valid admin authentication token."""
-    client.headers = {
-        **client.headers,
-        "Authorization": f"Bearer {admin_user_token['access_token']}"
-    }
-    return client 
+def admin_headers(admin_token):
+    """Create admin authentication headers."""
+    return {"Authorization": f"Bearer {admin_token}"}
+
+@pytest.fixture
+def expired_token(user_data):
+    """Create an expired authentication token for testing."""
+    payload = user_data.copy()
+    payload["exp"] = (datetime.utcnow() - timedelta(minutes=30)).timestamp()
+    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+
+@pytest.fixture
+def expired_headers(expired_token):
+    """Create expired authentication headers."""
+    return {"Authorization": f"Bearer {expired_token}"}
+
+@pytest.fixture
+def invalid_token():
+    """Create an invalid authentication token for testing."""
+    return "invalid.token.format"
+
+@pytest.fixture
+def invalid_headers(invalid_token):
+    """Create invalid authentication headers."""
+    return {"Authorization": f"Bearer {invalid_token}"} 
